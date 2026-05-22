@@ -1,0 +1,182 @@
+-- ✅ MẪU CHUẨN CHO NGƯỜI MỚI | TÉO HUB 🍎
+-- Giữ nguyên giao diện thật, chỉ thêm hướng dẫn 👈 ngay bên cạnh dòng cần sửa
+
+repeat task.wait() until game:IsLoaded()
+
+-- 🟢 Nút mở menu chính
+local ScreenGui = Instance.new("ScreenGui")
+local ImageButton = Instance.new("ImageButton")
+local UICorner = Instance.new("UICorner")
+
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+ImageButton.Parent = ScreenGui
+ImageButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ImageButton.BorderSizePixel = 0
+ImageButton.Position = UDim2.new(0.10615778, 0, 0.16217947, 0)
+ImageButton.Size = UDim2.new(0, 40, 0, 40)
+ImageButton.Draggable = true
+ImageButton.Image = "http://www.roblox.com/asset/?id=126677255840605"  -- 👈 đổi ID ảnh nút mở menu tại đây (ảnh roblox)
+
+UICorner.CornerRadius = UDim.new(1, 10)
+UICorner.Parent = ImageButton
+
+ImageButton.MouseButton1Down:Connect(function()
+	game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.End, false, game)
+end)
+
+-- 🟣 Giao diện Fluent
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+repeat wait() until game:IsLoaded()
+
+-- 🪟 Cửa sổ chính
+local Window = Fluent:CreateWindow({
+	Title = "VND💵",                 -- 👈 Tên script của bạn
+	SubTitle = "Version 1.0",           -- 👈 Mô tả phụ
+	TabWidth = 157,
+	Size = UDim2.fromOffset(450, 300),
+	Acrylic = true,
+	Theme = "Dark",                   -- 👈 đổi màu chủ đạo: Amethyst, Dark, Aqua, Light,...
+	MinimizeKey = Enum.KeyCode.End
+})
+
+-- 📑 Các tab (Cập nhật đúng 7 mục theo danh sách mới)
+local Tabs = {
+	Main0 = Window:AddTab({ Title = "Main 🏠" }),           -- Tab 1
+	Main1 = Window:AddTab({ Title = "Farm Level ⚔️" }),     -- Tab 2 (Chứa Auto Farm của bạn)
+	Main2 = Window:AddTab({ Title = "Farm Boss 👹" }),      -- Tab 3
+	Main3 = Window:AddTab({ Title = "Farm Tiền 💵" }),      -- Tab 4
+	Main4 = Window:AddTab({ Title = "PVP Combat 🥊" }),     -- Tab 5
+	Main5 = Window:AddTab({ Title = "Fix Lag ⚡" }),        -- Tab 6
+	Main6 = Window:AddTab({ Title = "Settings ⚙️" })        -- Tab 7
+}
+
+------------------------------------------------
+-- CẤU HÌNH LOGIC AUTO FARM (Đã thêm biến bật/tắt)
+------------------------------------------------
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
+
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+local currentBoss = nil
+local attackInterval = 0.1 
+local lastAttack = 0
+local moveSpeed = 8        
+
+_G.AutoFarmLevel = false -- Biến trạng thái bật/tắt hệ thống
+
+local function isAliveModel(model)
+    if model and model:FindFirstChild("Humanoid") and model.Humanoid.Health > 0 then
+        return true
+    end
+    return false
+end
+
+local function getNearestBoss(hrpPos)
+    local closestBoss = nil
+    local maxDistance = math.huge
+    local bossFolder = workspace:FindFirstChild("Bosses") or workspace
+    
+    for _, obj in ipairs(bossFolder:GetChildren()) do
+        if obj:IsA("Model") and isAliveModel(obj) and obj ~= char then
+            local bossHrp = obj:FindFirstChild("HumanoidRootPart")
+            if bossHrp then
+                local distance = (hrpPos - bossHrp.Position).Magnitude
+                if distance < maxDistance then
+                    maxDistance = distance
+                    closestBoss = obj
+                end
+            end
+        end
+    end
+    return closestBoss
+end
+
+-- Vòng lặp chính kiểm tra điều kiện công tắc
+RunService.Heartbeat:Connect(function(dt)
+    -- Nếu công tắc TẮT thì dừng toàn bộ xử lý bên dưới
+    if not _G.AutoFarmLevel then 
+        currentBoss = nil
+        return 
+    end
+
+    if not char or not char:FindFirstChild("HumanoidRootPart") then 
+        char = player.Character
+        if char then hrp = char:FindFirstChild("HumanoidRootPart") end
+        return 
+    end
+
+    local nearest = getNearestBoss(hrp.Position)
+    
+    if nearest and nearest ~= currentBoss and isAliveModel(nearest) then
+        currentBoss = nearest
+    end
+
+    if currentBoss and isAliveModel(currentBoss) then
+        local bossHrp = currentBoss:FindFirstChild("HumanoidRootPart")
+        if bossHrp then
+            hrp.CFrame = hrp.CFrame:Lerp(CFrame.new(bossHrp.Position + Vector3.new(0, 3, 0), bossHrp.Position), dt * moveSpeed)
+            
+            lastAttack = lastAttack + dt
+            if lastAttack >= attackInterval then
+                lastAttack = 0
+                VirtualUser:ClickButton1(Vector2.new())
+            end
+        end
+    else
+        currentBoss = nil
+    end
+end)
+
+------------------------------------------------
+-- TAB 1: Main 🏠
+------------------------------------------------
+Tabs.Main0:AddButton({
+	Title = "tiktok bạn:)",              
+	Description = "oách xà lách vô cùng",
+	Callback = function()
+		setclipboard("https://www.tiktok.com/@jannie3342?_t=ZS-90QsJQ5j0NO&_r=1")  
+	end
+})
+
+------------------------------------------------
+-- TAB 2: Farm Level ⚔️
+------------------------------------------------
+
+-- 👈 Công tắc bật/tắt Auto Farm của bạn nằm ở đây
+Tabs.Main1:AddToggle("AutoFarmLevelToggle", {
+    Title = "Tự Động Cày Cấp (Auto Farm)", 
+    Default = false, 
+    Callback = function(Value)
+        _G.AutoFarmLevel = Value -- Gán giá trị true/false cho vòng lặp chạy hoặc dừng
+    end
+})
+
+Tabs.Main1:AddButton({
+    Title = "admin",                             
+	Description = "script này ngon á đủ chức năng cả😃",
+	Callback = function()
+		local Settings = {
+			JoinTeam = "Pirates";   
+			Translator = true;      
+		}
+		loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Infinite-Yield-43437"))() 
+	 end
+})
+
+Tabs.Main1:AddButton({
+    Title = "vfly",
+    Description = "script này ngon á đủ chức năng cả😃",
+	Callback = function()
+		local Settings = {
+			JoinTeam = "Pirates";   
+			Translator = true;      
+		}
+        loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-V-fly-20577"))()
+     end
+})      
