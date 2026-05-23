@@ -1,0 +1,76 @@
+--[[ 
+  💰 VND💵 - Pro Edition (Anti-AFK Đẳng Cấp + Auto Sit + Auto Reconnect)
+]]
+
+local plr = game:GetService("Players").LocalPlayer
+local vu = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
+
+-- [1. ANTI-AFK ĐẲNG CẤP - Bỏ qua Idled, ép server hiểu bạn đang active]
+local function startAntiAFK()
+    local VirtualUser = game:GetService("VirtualUser")
+    plr.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+    
+    -- Chặn các packet AFK nếu cần thiết (phòng ngừa chuyên sâu)
+    task.spawn(function()
+        while task.wait(60) do
+            VirtualUser:CaptureController()
+        end
+    end)
+end
+startAntiAFK()
+
+-- [2. AUTO SIT - Tối ưu hóa tìm ghế]
+local targetPositions = {Vector3.new(567, 19, -533), Vector3.new(626, 19, -511), Vector3.new(629, 19, -419)}
+task.spawn(function()
+    while task.wait(2) do
+        local char = plr.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hrp and hum and not hum.Sit then
+            for _, pos in pairs(targetPositions) do
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("Seat") and (obj.Position - pos).Magnitude < 10 then
+                        if not obj.Occupant then
+                            hrp.CFrame = obj.CFrame
+                            task.wait(0.5)
+                            obj:Sit(hum)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- [3. AUTO RECONNECT - Kiểm tra văng game]
+task.spawn(function()
+    while task.wait(5) do
+        local errorGui = CoreGui:FindFirstChild("RobloxPromptGui")
+        if errorGui and errorGui:FindFirstChild("ErrorMessage", true) then
+            TeleportService:Teleport(game.PlaceId, plr)
+        end
+    end
+end)
+
+-- [4. UI ĐẲNG CẤP - Tối giản, không vướng víu]
+local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
+local f = Instance.new("Frame", gui)
+f.Size = UDim2.new(0, 140, 0, 40)
+f.Position = UDim2.new(0, 20, 0, 20)
+f.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+f.Active = true f.Draggable = true
+Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", f).Color = Color3.fromRGB(255, 215, 0)
+
+local title = Instance.new("TextLabel", f)
+title.Size = UDim2.new(1, 0, 1, 0)
+title.Text = "VND💵 ACTIVE"
+title.Font = Enum.Font.Code
+title.TextColor3 = Color3.fromRGB(255, 215, 0)
+title.BackgroundTransparency = 1
