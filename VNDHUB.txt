@@ -941,30 +941,37 @@ Tabs.Main7:AddButton({
     end
 })
 
--- 🚀 [FIX DỨT ĐIỂM] ĐỒNG BỘ HÓA TỰ ĐỘNG KHI VÀO GAME
-task.defer(function()
-    -- Chờ đợi cho đến khi giao diện Fluent đã tạo xong các Options (nút gạt/dropdown)
-    while not Fluent.Options or not Fluent.Options["UseConfigSystemToggle"] or not Fluent.Options["SelectConfigDropdown"] do
-        task.wait(0.2)
-    end
+-- 🚀 [FIX CUỐI CÙNG] ĐỒNG BỘ CẤU HÌNH TỰ ĐỘNG
+task.spawn(function()
+    -- 1. Đợi file hệ thống tồn tại
+    while not isfile(GlobalSettingsFile) do task.wait(0.5) end
     
-    if isfile(GlobalSettingsFile) then
-        pcall(function()
-            local data = HttpService:JSONDecode(readfile(GlobalSettingsFile))
-            if data and data["SelectedConfigName"] then
-                _G.SelectedConfigName = data["SelectedConfigName"]
-                _G.UseConfigSystem = data["UseConfigSystem"] or false
-                
-                -- Gạt nút trên giao diện
-                Fluent.Options["UseConfigSystemToggle"]:SetValue(_G.UseConfigSystem)
-                Fluent.Options["SelectConfigDropdown"]:SetValue(_G.SelectedConfigName)
-                
-                -- Nạp logic config nếu đang bật chế độ UseConfigSystem
-                if _G.UseConfigSystem then
-                    loadSelectedConfig(_G.SelectedConfigName)
-                    Fluent:Notify({Title = "VND💵 System", Content = "Đã tự động nạp & kích hoạt: " .. _G.SelectedConfigName, Duration = 5})
+    -- 2. Đọc dữ liệu ra biến trước khi vẽ UI
+    local success, data = pcall(function() return HttpService:JSONDecode(readfile(GlobalSettingsFile)) end)
+    
+    if success and data then
+        _G.UseConfigSystem = data["UseConfigSystem"] or false
+        _G.SelectedConfigName = data["SelectedConfigName"] or ""
+        
+        -- 3. NẾU CÓ CONFIG ĐANG CHỌN THÌ NẠP DỮ LIỆU NGAY VÀO BIẾN _G
+        if _G.UseConfigSystem and _G.SelectedConfigName ~= "" and _G.SelectedConfigName ~= "Chưa có config nào" then
+            local path = ConfigFolderName .. "/" .. _G.SelectedConfigName .. ".json"
+            if isfile(path) then
+                local configData = HttpService:JSONDecode(readfile(path))
+                for key, value in pairs(configData) do
+                    _G[key] = value -- Gán thẳng giá trị vào biến của game
                 end
             end
-        end)
+        end
     end
+    
+    -- 4. ĐỢI UI XUẤT HIỆN RỒI MỚI GẠT NÚT (Chỉ để hiển thị cho đẹp)
+    task.spawn(function()
+        while not Fluent.Options or not Fluent.Options["UseConfigSystemToggle"] do task.wait(0.2) end
+        if _G.UseConfigSystem then
+            Fluent.Options["UseConfigSystemToggle"]:SetValue(true)
+            Fluent.Options["SelectConfigDropdown"]:SetValue(_G.SelectedConfigName)
+            Fluent:Notify({Title = "VND💵 System", Content = "Đã tự động kích hoạt Config: " .. _G.SelectedConfigName, Duration = 3})
+        end
+    end)
 end)
