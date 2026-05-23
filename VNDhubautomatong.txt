@@ -1,0 +1,95 @@
+--[[ 
+  💰 VND💵 - Final Ultimate Edition (Kết hợp Anti-AFK + Auto Reconnect + Auto Sit Fix)
+]]
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local VirtualUser = game:GetService("VirtualUser")
+local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
+local workspace = game:GetService("Workspace")
+
+-- [1. CẤU HÌNH TỌA ĐỘ]
+local targetPositions = {
+    Vector3.new(573, 21, -357),
+    Vector3.new(563, 20, -386),
+    Vector3.new(553, 20, -413),
+    Vector3.new(531, 21, -449)
+}
+
+-- [2. CÁC HÀM HỖ TRỢ]
+local function isAreaOccupied(targetPos)
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            if (p.Character.HumanoidRootPart.Position - targetPos).Magnitude <= 7 then return true end
+        end
+    end
+    for _, v in ipairs(workspace:GetDescendants()) do
+        if v:IsA("Seat") and (v.Position - targetPos).Magnitude <= 7 and v.Occupant then return true end
+    end
+    return false
+end
+
+local function interactWithSeat(targetPos)
+    for _, prompt in ipairs(workspace:GetDescendants()) do
+        if prompt:IsA("ProximityPrompt") and (prompt.Parent:IsA("BasePart")) then
+            if (prompt.Parent.Position - targetPos).Magnitude <= 10 then
+                fireproximityprompt(prompt)
+                break
+            end
+        end
+    end
+end
+
+-- [3. ANTI-AFK]
+player.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
+
+-- [4. AUTO SIT - FIX LỖI DỊCH CHUYỂN]
+task.spawn(function()
+    while task.wait(3) do
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        
+        if hrp and hum and not hum.Sit then
+            for _, pos in pairs(targetPositions) do
+                if not isAreaOccupied(pos) then
+                    hrp.CanCollide = false
+                    hrp.CFrame = CFrame.new(pos)
+                    interactWithSeat(pos)
+                    task.wait(0.5)
+                    hrp.CanCollide = true
+                    break
+                end
+            end
+        end
+    end
+end)
+
+-- [5. AUTO RECONNECT]
+task.spawn(function()
+    while task.wait(5) do
+        local errorGui = CoreGui:FindFirstChild("RobloxPromptGui")
+        if errorGui and errorGui:FindFirstChild("ErrorMessage", true) then
+            TeleportService:Teleport(game.PlaceId, player)
+        end
+    end
+end)
+
+-- [6. UI ĐẲNG CẤP]
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+local f = Instance.new("Frame", gui)
+f.Size = UDim2.new(0, 150, 0, 40)
+f.Position = UDim2.new(0, 20, 0, 20)
+f.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+f.Active = true f.Draggable = true
+Instance.new("UICorner", f)
+Instance.new("UIStroke", f).Color = Color3.fromRGB(255, 215, 0)
+local t = Instance.new("TextLabel", f)
+t.Size = UDim2.new(1, 0, 1, 0)
+t.Text = "VND💵 FULL AUTO"
+t.TextColor3 = Color3.fromRGB(255, 215, 0)
+t.BackgroundTransparency = 1
