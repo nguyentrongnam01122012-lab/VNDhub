@@ -1,0 +1,91 @@
+--[[ 
+  💰 VND💵 - Pro Edition (Full Fixed)
+]]
+
+local plr = game:GetService("Players").LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
+local VirtualUser = game:GetService("VirtualUser")
+
+-- [1. ANTI-AFK]
+task.spawn(function()
+    plr.Idled:Connect(function()
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton2(Vector2.new())
+    end)
+    while task.wait(300) do
+        VirtualUser:CaptureController()
+    end
+end)
+
+-- [2. AUTO SIT - ĐÃ FIX DỊCH CHUYỂN VÀ RUNG]
+local targetPositions = {
+    Vector3.new(567, 19, -533), 
+    Vector3.new(626, 19, -511), 
+    Vector3.new(629, 19, -419)
+}
+
+task.spawn(function()
+    while task.wait(2) do
+        local char = plr.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        
+        if hrp and hum and hum.Health > 0 and not hum.Sit then
+            for _, pos in pairs(targetPositions) do
+                local foundSeat = nil
+                
+                -- Tìm ghế gần tọa độ
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("Seat") and (obj.Position - pos).Magnitude < 10 then
+                        if not obj.Occupant then
+                            foundSeat = obj
+                            break
+                        end
+                    end
+                end
+                
+                -- Nếu thấy ghế trống, di chuyển tới
+                if foundSeat then
+                    -- Kiểm tra khoảng cách: nếu đã sát ghế (< 4 stud) thì không cần Teleport nữa
+                    if (hrp.Position - foundSeat.Position).Magnitude > 4 then
+                        hrp.CFrame = foundSeat.CFrame
+                        task.wait(0.5) -- Đợi nhân vật chạm ghế
+                    end
+                    
+                    foundSeat:Sit(hum)
+                    task.wait(2) -- Nghỉ 2 giây để tránh rung sau khi đã ngồi
+                    break
+                end
+            end
+        end
+    end
+end)
+
+-- [3. AUTO RECONNECT]
+task.spawn(function()
+    while task.wait(5) do
+        local errorGui = CoreGui:FindFirstChild("RobloxPromptGui")
+        if errorGui and errorGui:FindFirstChild("ErrorMessage", true) then
+            TeleportService:Teleport(game.PlaceId, plr)
+        end
+    end
+end)
+
+-- [4. UI]
+local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
+local f = Instance.new("Frame", gui)
+f.Size = UDim2.new(0, 140, 0, 40)
+f.Position = UDim2.new(0, 20, 0, 20)
+f.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+f.Active = true f.Draggable = true
+Instance.new("UICorner", f).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", f).Color = Color3.fromRGB(255, 215, 0)
+
+local title = Instance.new("TextLabel", f)
+title.Size = UDim2.new(1, 0, 1, 0)
+title.Text = "VND💵 ACTIVE"
+title.Font = Enum.Font.Code
+title.TextColor3 = Color3.fromRGB(255, 215, 0)
+title.BackgroundTransparency = 1
+
